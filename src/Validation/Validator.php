@@ -33,7 +33,6 @@ class Validator {
      */
     public function check($validation_data)
     {
-
         $errors = [];
 
         foreach ($validation_data as $name => $value) {
@@ -46,7 +45,7 @@ class Validator {
                 switch ($exploded[0]) {
                     case 'min':
                         $min = $exploded[1];
-                        if (Valid::string()->length($min)->Validate($this->request->input($name)) == false) {
+                        if (Valid::stringType()->length($min)->Validate($this->request->input($name)) == false) {
                             $errors[] = $name . " must be at least " . $min . " characters long!";
                         }
                         break;
@@ -82,7 +81,6 @@ class Validator {
 
     }
 
-
     /**
      * @param $rules
      * @return bool
@@ -91,7 +89,7 @@ class Validator {
     {
         $errors = $this->check($rules);
 
-        if (sizeof($errors) > 0) {
+        if (\count($errors) > 0) {
             $this->session->put('_error', $errors);
             $this->isValid = false;
             $this->response->withInput();
