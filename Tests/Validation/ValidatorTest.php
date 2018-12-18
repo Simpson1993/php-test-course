@@ -5,6 +5,7 @@ namespace Acme\Tests;
 use Acme\Http\Request;
 use Acme\Http\Response;
 use Acme\Validation\Validator;
+use Kunststube\CSRFP\SignatureGenerator;
 
 /**
  * Class ValidatorTest
@@ -24,67 +25,95 @@ class ValidatorTest extends \PHPUnit\Framework\TestCase
      * @var Validator
      */
     protected $validator;
-    protected $testData;
 
-    /**
-     * @param array $testData
-     */
-    protected function setUpRequestResponse(array $testData = [])
+//    protected $testData;
+
+    protected function setUp()
     {
-        if ($this->testData === null) {
-            $this->testData = $testData;
-        }
+        $signer = $this->getMockBuilder(SignatureGenerator::class)
+            ->setConstructorArgs(['qwe123'])
+            ->getMock();
 
-        $this->request = new Request($this->testData);
-        $this->response = new Response($this->request);
-        $this->validator = new Validator($this->request, $this->response);
+        $this->request = $this->getMockBuilder(Request::class)
+            ->getMock();
+        $this->response = $this->getMockBuilder(Response::class)
+            ->setConstructorArgs([$this->request, $signer])
+            ->getMock();
     }
-    
+
     public function testGetIsValidReturnsTrue()
     {
-        $this->setUpRequestResponse();
-        $this->validator->setIsValid(true);
-        $this->assertTrue($this->validator->getIsValid());
+        $validator = new Validator($this->request, $this->response);
+        $validator->setIsValid(true);
+        $this->assertTrue($validator->getIsValid());
     }
 
     public function testGetIsValidReturnsFalse()
     {
-        $this->setUpRequestResponse();
-        $this->validator->setIsValid(false);
-        $this->assertFalse($this->validator->getIsValid());
+        $validator = new Validator($this->request, $this->response);
+        $validator->setIsValid(false);
+        $this->assertFalse($validator->getIsValid());
     }
 
     public function testCheckForMinStringLenghtWithValidData()
     {
-        $this->setUpRequestResponse(['mintype' => 'yellow']);
-        $errors = $this->validator->check(['mintype' => 'min:3']);
+        $req = $this->getMockBuilder(Request::class)
+            ->getMock();
+
+        $req->expects($this->once())
+            ->method('input')
+            ->will($this::returnValue('yellow'));
+
+        $validator = new Validator($req, $this->response);
+        $errors = $validator->check(['mintype' => 'min:3']);
         $this->assertCount(0, $errors);
     }
 
     public function testCheckForMinStringLenghtWithInvalidData()
     {
-        $this->setUpRequestResponse(['mintype' => 'x']);
-        $errors = $this->validator->check(['mintype' => 'min:3']);
+        $req = $this->getMockBuilder(Request::class)
+            ->getMock();
+
+        $req->expects($this->once())
+            ->method('input')
+            ->will($this::returnValue('x'));
+
+        $validator = new Validator($req, $this->response);
+        $errors = $validator->check(['mintype' => 'min:3']);
         $this->assertCount(1, $errors);
     }
 
     public function testCheckForEmailWithValidData()
     {
-        $this->setUpRequestResponse(['mintype' => 'qwer@qwer.ty']);
-        $errors = $this->validator->check(['mintype' => 'email']);
+        $req = $this->getMockBuilder(Request::class)
+            ->getMock();
+
+        $req->expects($this->once())
+            ->method('input')
+            ->will($this::returnValue('qwer@qwer.ty'));
+
+        $validator = new Validator($req, $this->response);
+        $errors = $validator->check(['mintype' => 'email']);
         $this->assertCount(0, $errors);
     }
 
     public function testCheckForEmailWithInvalideData()
     {
-        $this->setUpRequestResponse(['mintype' => 'qwerty']);
-        $errors = $this->validator->check(['mintype' => 'email']);
+        $req = $this->getMockBuilder(Request::class)
+            ->getMock();
+
+        $req->expects($this->once())
+            ->method('input')
+            ->will($this::returnValue('qwerty'));
+
+        $validator = new Validator($req, $this->response);
+        $errors = $validator->check(['mintype' => 'email']);
         $this->assertCount(1, $errors);
     }
-
-    public function testValidateWithInvalidData()
-    {
-        $this->setUpRequestResponse(['check_field' => 'x']);
-        $this->validator->validate(['check_field' => 'email'], '/register');
-    }
+//
+//    public function testValidateWithInvalidData()
+//    {
+//        $this->setUpRequestResponse(['check_field' => 'x']);
+//        $this->validator->validate(['check_field' => 'email'], '/register');
+//    }
 }
