@@ -24,13 +24,14 @@ class Response {
 
     /**
      * Constructor
+     * @param Request $request
      */
-    public function __construct(Request $request)
+    public function __construct(Request $request, SignatureGenerator $signer)
     {
         $this->request = $request;
         $this->blade = new BladeInstance(getenv('VIEWS_DIRECTORY'), getenv('CACHE_DIRECTORY'));
         $this->response_type = 'text/html';
-        $this->signer = new SignatureGenerator(getenv('CSRF_SECRET'));
+        $this->signer = $signer;
         $this->with['signer'] = $this->signer;
         $this->session = new Session();
         $this->with_input = false;

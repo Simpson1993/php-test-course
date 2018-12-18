@@ -20,7 +20,7 @@ if (is_string($match['target']))
 
 if (($controller != null) && (is_callable(array($controller, $method)))) {
     // controller
-    $object = new $controller();
+    $object = $injector->make($controller);
     call_user_func_array(array($object, $method), array($match['params']));
 } else if ($match && is_callable($match['target'])) {
     // closure

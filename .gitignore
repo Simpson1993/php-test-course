@@ -8,6 +8,7 @@
 out
 gen### Laravel template
 vendor/
+cache/
 node_modules/
 npm-debug.log
 
