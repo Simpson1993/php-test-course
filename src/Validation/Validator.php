@@ -65,7 +65,7 @@ class Validator {
                     case 'unique':
                         $model = "Acme\\Models\\" . $exploded[1];
                         $table = new $model;
-                        $results = $table::where($name, '=', $this->request->input($name))->get();
+                        $results = $this->getRows($table, $name);
                         foreach ($results as $item) {
                             $errors[] = $this->request->input($name) . " already exists in this system!";
                         }
@@ -117,6 +117,16 @@ class Validator {
     public function setIsValid($isValid)
     {
         $this->isValid = $isValid;
+    }
+
+    /**
+     * @param $table
+     * @param $name
+     * @return mixed
+     */
+    public function getRows($table, $name)
+    {
+        return $table::where($name, '=', $this->request->input($name))->get();
     }
 
 }

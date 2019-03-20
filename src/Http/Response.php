@@ -9,8 +9,8 @@ use Sunra\PhpSimple\HtmlDomParser;
  * Class Response
  * @package Acme\Http
  */
-class Response {
-
+class Response
+{
     protected $data;
     protected $view;
     protected $with;
@@ -25,16 +25,23 @@ class Response {
     /**
      * Constructor
      * @param Request $request
+     * @param SignatureGenerator $signer
+     * @param BladeInstance $blade
+     * @param Session $session
      */
-    public function __construct(Request $request, SignatureGenerator $signer)
-    {
+    public function __construct(
+        Request $request,
+        SignatureGenerator $signer,
+        BladeInstance $blade,
+        Session $session
+    ) {
         $this->request = $request;
-        $this->blade = new BladeInstance(getenv('VIEWS_DIRECTORY'), getenv('CACHE_DIRECTORY'));
         $this->response_type = 'text/html';
         $this->signer = $signer;
         $this->with['signer'] = $this->signer;
-        $this->session = new Session();
         $this->with_input = false;
+        $this->blade = $blade;
+        $this->session = $session;
     }
 
 

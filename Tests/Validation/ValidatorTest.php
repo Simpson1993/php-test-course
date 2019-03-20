@@ -4,8 +4,11 @@ namespace Acme\Tests;
 
 use Acme\Http\Request;
 use Acme\Http\Response;
+use Acme\Http\Session;
 use Acme\Validation\Validator;
+use duncan3dc\Laravel\BladeInstance;
 use Kunststube\CSRFP\SignatureGenerator;
+use Dotenv;
 
 /**
  * Class ValidatorTest
@@ -25,8 +28,14 @@ class ValidatorTest extends \PHPUnit\Framework\TestCase
      * @var Validator
      */
     protected $validator;
-
-//    protected $testData;
+    /**
+     * @var Session
+     */
+    protected $session;
+    /**
+     * @var BladeInstance
+     */
+    protected $blade;
 
     protected function setUp()
     {
@@ -34,11 +43,26 @@ class ValidatorTest extends \PHPUnit\Framework\TestCase
             ->setConstructorArgs(['qwe123'])
             ->getMock();
 
-        $this->request = $this->getMockBuilder(Request::class)
+        $this->request = $this->getMockBuilder(Request::class)->getMock();
+        $this->session = $this->getMockBuilder(Session::class)->getMock();
+        $this->blade = $this->getMockBuilder(BladeInstance::class)
+            ->setConstructorArgs(['qwe123', 'qwe'])
             ->getMock();
         $this->response = $this->getMockBuilder(Response::class)
-            ->setConstructorArgs([$this->request, $signer])
+            ->setConstructorArgs([$this->request, $signer, $this->blade, $this->session])
             ->getMock();
+    }
+
+    public function getReq($input = '')
+    {
+        $req = $this->getMockBuilder(Request::class)
+            ->getMock();
+
+        $req->expects($this->once())
+            ->method('input')
+            ->will($this::returnValue($input));
+
+        return $req;
     }
 
     public function testGetIsValidReturnsTrue()
@@ -57,13 +81,7 @@ class ValidatorTest extends \PHPUnit\Framework\TestCase
 
     public function testCheckForMinStringLenghtWithValidData()
     {
-        $req = $this->getMockBuilder(Request::class)
-            ->getMock();
-
-        $req->expects($this->once())
-            ->method('input')
-            ->will($this::returnValue('yellow'));
-
+        $req = $this->getReq('yellow');
         $validator = new Validator($req, $this->response);
         $errors = $validator->check(['mintype' => 'min:3']);
         $this->assertCount(0, $errors);
@@ -71,13 +89,7 @@ class ValidatorTest extends \PHPUnit\Framework\TestCase
 
     public function testCheckForMinStringLenghtWithInvalidData()
     {
-        $req = $this->getMockBuilder(Request::class)
-            ->getMock();
-
-        $req->expects($this->once())
-            ->method('input')
-            ->will($this::returnValue('x'));
-
+        $req = $this->getReq('x');
         $validator = new Validator($req, $this->response);
         $errors = $validator->check(['mintype' => 'min:3']);
         $this->assertCount(1, $errors);
@@ -85,13 +97,7 @@ class ValidatorTest extends \PHPUnit\Framework\TestCase
 
     public function testCheckForEmailWithValidData()
     {
-        $req = $this->getMockBuilder(Request::class)
-            ->getMock();
-
-        $req->expects($this->once())
-            ->method('input')
-            ->will($this::returnValue('qwer@qwer.ty'));
-
+        $req = $this->getReq('qwer@qwer.ty');
         $validator = new Validator($req, $this->response);
         $errors = $validator->check(['mintype' => 'email']);
         $this->assertCount(0, $errors);
@@ -99,21 +105,65 @@ class ValidatorTest extends \PHPUnit\Framework\TestCase
 
     public function testCheckForEmailWithInvalideData()
     {
-        $req = $this->getMockBuilder(Request::class)
-            ->getMock();
-
-        $req->expects($this->once())
-            ->method('input')
-            ->will($this::returnValue('qwerty'));
+        $req = $this->getReq('qwerty');
 
         $validator = new Validator($req, $this->response);
         $errors = $validator->check(['mintype' => 'email']);
         $this->assertCount(1, $errors);
     }
-//
-//    public function testValidateWithInvalidData()
-//    {
-//        $this->setUpRequestResponse(['check_field' => 'x']);
-//        $this->validator->validate(['check_field' => 'email'], '/register');
-//    }
+
+    public function testCheckForEqualToWithValidData()
+    {
+        //All methods are stubs, all methods return NULL, all methods can be overridden.
+        $req = $this->getMockBuilder(Request::class)->getMock();
+        $req->expects($this->at(0))
+            ->method('input')
+            ->willReturn('jack');
+        $req->expects($this->at(1))
+            ->method('input')
+            ->willReturn('jack');
+
+        $validator = new Validator($req, $this->response);
+        $errors = $validator->check(['my_field' => 'equalTo:another_field']);
+        $this->assertCount(0, $errors);
+    }
+
+    public function testCheckForEqualToWithInvalidData()
+    {
+        $req = $this->getMockBuilder(Request::class)->getMock();
+        $req->expects($this->at(0))
+            ->method('input')
+            ->willReturn('jack');
+        $req->expects($this->at(1))
+            ->method('input')
+            ->willReturn('john');
+
+        $validator = new Validator($req, $this->response);
+        $errors = $validator->check(['my_field' => 'equalTo:another_field']);
+        $this->assertCount(1, $errors);
+    }
+
+    public function testCheckForUniqueWithValidData()
+    {
+        $validator = $this->getMockBuilder(Validator::class)
+            ->setConstructorArgs([$this->request, $this->response, $this->session])
+            ->setMethods(['getRows'])
+            ->getMock();
+
+        $validator->method('getRows')->willReturn([]);
+        $errors = $validator->check(['my_field' => 'unique:User']);
+        $this->assertCount(0, $errors);
+    }
+
+    public function testCheckForUniqueWithInalidData()
+    {
+        $validator = $this->getMockBuilder(Validator::class)
+            ->setConstructorArgs([$this->request, $this->response, $this->session])
+            ->setMethods(['getRows'])
+            ->getMock();
+
+        $validator->method('getRows')->willReturn(['a']);
+        $errors = $validator->check(['my_field' => 'unique:User']);
+        $this->assertCount(1, $errors);
+    }
 }
